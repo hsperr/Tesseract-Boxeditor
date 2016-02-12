@@ -14,18 +14,19 @@ def print_next_letter(letters, rectangles):
 
 def drawRectangles(img, rectangles):
     for cnt, (x1, y1, x2, y2) in enumerate(rectangles):
-        cv2.rectangle(img, (x1, y1), (x2, y2), BLUE, 1)
+        cv2.rectangle(img, (x1, y1-offset), (x2, y2-offset), BLUE, 1)
         #cv2.putText(img, str(cnt), (x2, y2+2), cv2.FONT_HERSHEY_SIMPLEX, 1, 1)
 
 BLUE = [255,0,0]        # rectangle color
 ix, iy = -1, -1
 rectangles = []
 letters = []
+offset = 0 
 
 def onmouse(event, x, y, flags, param):
-    global rectangles, ix, iy, img, letters
+    global rectangles, ix, iy, img, letters, offset
     # Draw Rectangle
-    y=y+3
+    y=y+3+offset
     if event == cv2.EVENT_LBUTTONDOWN:
         print("Set {} {}".format(x, y))
         rectangle = True
@@ -82,6 +83,7 @@ def read_filenames_from_folder(folder):
 def create_window_and_register_callback():
     cv2.namedWindow('input')
     cv2.setMouseCallback('input',onmouse)
+    cv2.moveWindow('input', 300, 0)
 
 if __name__ == '__main__':
     global img, img2, rectangles, letters
@@ -102,14 +104,16 @@ if __name__ == '__main__':
     box_filename = filename[:-4]+'.box'
     letter_filename = filename[:-4]+'.txt'
 
-    img = load_image(filename)
     original = load_image(filename)
+    print(original.shape)
+    img = load_image(filename)[:800]
     empty_image = np.matrix(img.shape)
 
     rectangles = load_box(box_filename)
     letters = load_letters(letter_filename)
 
     create_window_and_register_callback()
+    offset = 0
 
     while(1):
         print("Pls Input")
@@ -120,14 +124,24 @@ if __name__ == '__main__':
         # key bindings
         if k == 27:         # esc to exit
             break
+        elif k == ord('j'): # save rectangles
+            if offset<original.shape[1]:
+                offset += 50
+            img = original.copy()[offset:800+offset, :]
+            print(offset)
+        elif k == ord('k'): # save rectangles
+            if offset>0:
+                offset -= 50
+            img = original.copy()[offset:800+offset, :]
+            print(offset)
         elif k == ord('s'): # save rectangles
             save_boxes(box_filename, rectangles)
         elif k == ord('u'):
             rectangles = rectangles[:-1]
-            img = original.copy()
+            img = original.copy()[offset:800+offset, :]
         elif k == ord('r'): # reset everything
             rectangles = []
-            img = original.copy()
+            img = original.copy()[offset:800+offset, :]
         elif k == ord('n'):
             current_image+=1
             if current_image>=len(images):

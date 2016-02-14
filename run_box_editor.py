@@ -39,37 +39,39 @@ def onmouse(event, x, y, flags, param):
             print_next_letter(letters, rectangles)
             ix, iy = -1, -1
 
-def load_box(box_filename):
+def load_box(box_filename, shape):
     print(box_filename)
     rectangles = []
     if os.path.exists(box_filename):
         try:
             with open(box_filename) as f:
                 split = f.read().split('\n')
-                print(split)
-                rectangles = [map(int, x.split(' ')) for x in split[:-1]]
+                for char, x1, y1, x2, y2, _ in map(lambda x: x.split(' '), split[:-1]):
+                    rectangles.append((int(x1), shape[0]-int(y1), int(x2), shape[0]-int(y2)))
         except Exception as e:
             print("Couldn't load boxfile: {}".format(e))
     return rectangles
 
 def load_letters(letter_filename):
     print(letter_filename)
-    rectangles = []
+    letters = []
     if os.path.exists(letter_filename):
         try:
             with open(letter_filename) as f:
                 split = f.read().decode('utf-8').replace('\n', '').replace(' ', '').replace(u'\u3000', '').replace('\t', '')
-                print(split)
                 letters = [x for x in split if not x == u'\u3000']
-                print(letters)
         except Exception as e:
             print("Couldn't load letters: {}".format(e))
     return letters
 
-def save_boxes(filename, rectangles):
+def save_boxes(filename, rectangles, letters, shape):
+    from itertools import izip
+    print("saving")
     with open(filename, 'w') as f:
-      for vector in rectangles:
-          f.write(' '.join([str(x) for x in vector])+'\n')
+        if not letters:
+            letters = ["#" for x in rectangles]
+        for (x1, y1, x2, y2), letter in izip(rectangles, letters):
+            f.write(' '.join([letter.encode('utf-8')]+[str(x) for x in [x1, shape[0]-y1, x2, shape[0]-y2]]+['0'])+'\n')
 
 def load_image(filename):
     img = cv2.imread(filename)
@@ -105,11 +107,11 @@ if __name__ == '__main__':
     letter_filename = filename[:-4]+'.txt'
 
     original = load_image(filename)
-    print(original.shape)
     img = load_image(filename)[:800]
     empty_image = np.matrix(img.shape)
 
-    rectangles = load_box(box_filename)
+    print(original.shape)
+    rectangles = load_box(box_filename, original.shape)
     letters = load_letters(letter_filename)
 
     create_window_and_register_callback()
@@ -135,7 +137,7 @@ if __name__ == '__main__':
             img = original.copy()[offset:800+offset, :]
             print(offset)
         elif k == ord('s'): # save rectangles
-            save_boxes(box_filename, rectangles)
+            save_boxes(box_filename, rectangles, letters, original.shape)
         elif k == ord('u'):
             rectangles = rectangles[:-1]
             img = original.copy()[offset:800+offset, :]
@@ -144,14 +146,28 @@ if __name__ == '__main__':
             img = original.copy()[offset:800+offset, :]
         elif k == ord('n'):
             current_image+=1
-            if current_image>=len(images):
+            if current_image>=len(image_names):
                 current_image = 0
-            filename = images[current_image]
-            img, img2, rectangles = load_image(filename)
+            filename = image_names[current_image]
+            box_filename = filename[:-4]+'.box'
+            letter_filename = filename[:-4]+'.txt'
+            original = load_image(filename)
+            img = load_image(filename)[:800]
+            empty_image = np.matrix(img.shape)
+            rectangles = load_box(box_filename, original.shape)
+            letters = load_letters(letter_filename)
+            offset = 0
         elif k == ord('b'):
             current_image-=1
             if current_image<0:
-                current_image = len(images)-1
-            filename = images[current_image]
-            img, img2, rectangles = load_image(filename)
+                current_image = len(image_names)-1
+            filename = image_names[current_image]
+            box_filename = filename[:-4]+'.box'
+            letter_filename = filename[:-4]+'.txt'
+            original = load_image(filename)
+            img = load_image(filename)[:800]
+            empty_image = np.matrix(img.shape)
+            rectangles = load_box(box_filename, original.shape)
+            letters = load_letters(letter_filename)
+            offset = 0
     cv2.destroyAllWindows()

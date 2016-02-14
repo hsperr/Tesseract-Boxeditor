@@ -80,6 +80,8 @@ def load_image(filename):
 def read_filenames_from_folder(folder):
     images = list(glob.glob(folder+"*.jpg"))
     images.extend(list(glob.glob(folder+"*.png")))
+    images.extend(list(glob.glob(folder+"*.tiff")))
+    images.extend(list(glob.glob(folder+"*.tif")))
     return images
 
 def create_window_and_register_callback():
@@ -100,11 +102,13 @@ if __name__ == '__main__':
         print("Please secify a folder as first argument, see README.md for details.")
 
     image_names = read_filenames_from_folder(folder)
+    print("Found {} images".format(len(image_names)))
 
     current_image = 0
     filename = image_names[current_image]
-    box_filename = filename[:-4]+'.box'
-    letter_filename = filename[:-4]+'.txt'
+    print("Current Image: {}".format(filename))
+    box_filename = '.'.join(filename.split('.')[:-1]+['box'])
+    letter_filename = '.'.join(filename.split('.')[:-1]+['txt'])
 
     original = load_image(filename)
     img = load_image(filename)[:800]
@@ -112,7 +116,9 @@ if __name__ == '__main__':
 
     print(original.shape)
     rectangles = load_box(box_filename, original.shape)
+    print("Found {} boxes".format(len(rectangles)))
     letters = load_letters(letter_filename)
+    print("Found {} letters".format(len(letters)))
 
     create_window_and_register_callback()
     offset = 0
@@ -124,7 +130,7 @@ if __name__ == '__main__':
         print_next_letter(letters, rectangles)
         k = 0xFF & cv2.waitKey(0)
         # key bindings
-        if k == 27:         # esc to exit
+        if k == 27 or k == ord('q'):         # esc to exit
             break
         elif k == ord('j'): # save rectangles
             if offset<original.shape[1]:
